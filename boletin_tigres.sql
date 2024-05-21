@@ -1,3 +1,107 @@
+USE traballadores;
+
+SELECT COUNT(*)
+FROM empregado
+where empDepartamento = 110; -- 3
+
+SELECT COUNT(*)
+FROM empregado
+where empDepartamento = 111; -- 8
+
+SELECT *
+FROM departamento
+WHERE depNumero= 110; -- 3 empr
+
+SELECT *
+FROM departamento
+WHERE depNumero= 111; -- 8 empregados
+
+
+SELECT * FROM empregado;
+SELECT * FROM departamento;
+
+DROP TRIGGER insertarEmpleado;
+
+-- ------------ EL TRIGGER QUE INSERTA
+delimiter // -- Los tres triggers irían con el delimitador, no hace falta usar uno para cada trigger
+CREATE TRIGGER empregadoAI AFTER INSERT ON empregado
+FOR EACH ROW
+BEGIN
+	UPDATE departamento
+    SET depEmpregados = (depEmpregados +1)
+    WHERE depNumero = NEW.empDepartamento;
+END
+//
+delimiter ;
+
+
+
+INSERT INTO empregado
+VALUES (9090,110,410,CURRENT_DATE(),CURRENT_DATE(),1400,30,3,"Rodolfo"),
+(9091,110,410,CURRENT_DATE(),CURRENT_DATE(),1400,30,3,"Adolfo");
+
+DELETE FROM empregado 
+WHERE empNumero = 9090
+OR empNumero = 9091;
+
+
+
+-- ------------------------------------------------
+-- ------------ EL TRIGGER QUE BORRA
+delimiter //
+CREATE TRIGGER borrarEmpleado AFTER DELETE ON empregado
+FOR EACH ROW
+BEGIN
+	UPDATE departamento
+    SET depEmpregados = (depEmpregados -1)
+    WHERE depNumero = OLD.empDepartamento;
+END
+//
+delimiter ;
+
+
+-- -------------------------------------------------
+-- ------------ EL TRIGGER QUE CAMBIA DEPARTAMENTO
+delimiter //
+CREATE TRIGGER moverEmpleado AFTER UPDATE ON empregado
+FOR EACH ROW
+BEGIN
+	IF NEW.empDepartamento <> OLD.empDepartamento THEN -- El IF este no hace falta
+		UPDATE departamento
+        SET depEmpregados = depEmpregados - 1
+        WHERE depNumero = OLD.empDepartamento;
+        UPDATE departamento
+        SET depEmpregados = depEmpregados + 1
+        WHERE depNumero = NEW.empDepartamento;
+	END IF;
+END;
+//
+delimiter ;
+
+UPDATE empregado
+SET empDepartamento = 111
+WHERE empNumero = 180;
+
+
+
+-- ------------------------ crear la tabla CENTRO
+
+CREATE TABLE centro_aud (
+	cenNumero INT NOT NULL,
+    cenNome CHAR(30) NULL,
+    cenEnderezo CHAR(30) NULL,
+    aud_dat TIMESTAMP DEFAULT CURRENT_TIMESTAMP() NOT NULL,
+    aud_usr VARCHAR(30) NOT NULL,
+    aud_ope ENUM ('I','U','D') NOT NULL COMMENT "I=INSERT, U=UPDATE, D=DELETE",
+    CONSTRAINT centro_aud_PK 
+		PRIMARY KEY (cenNumero, aud_dat, aud_usr),
+	CONSTRAINT cenNumero_FK_centro
+		FOREIGN KEY (cenNumero) REFERENCES centro(cenNumero));
+        
+        
+SELECT *
+FROM centro_aud;
+
 -- DISPARADORES E EVENTOS
 -- 
 -- DISPARADORES:
@@ -14,6 +118,8 @@
 --        Proba os disparadores creados usando sentenzas que afecte a varios empregados.
 --        
 USE traballadores;
+
+-- Están arriba
 
 --     3. Na BD traballadores: 
 --        Crea unha táboa centro_aud que: 
@@ -33,7 +139,7 @@ CREATE TABLE centro_aud (
                     cenEnderezo CHAR(30) NULL,
                     aud_dat TIMESTAMP NOT NULL DEFAULT current_timestamp,
                     aud_usr VARCHAR(30) NOT NULL,
-                    aud_ope ENUM('I','U','D') COMMENT 'I=INSERT, U=UPDATE, D=DELETE',
+                    aud_ope ENUM('I','U','D') NOT NULL COMMENT 'I=INSERT, U=UPDATE, D=DELETE',
                     CONSTRAINT centro_aud_PK
 						PRIMARY KEY (cenNumero, aud_dat, aud_usr),
 					CONSTRAINT cenNumero_FK_centro
@@ -47,8 +153,8 @@ SELECT * FROM centro_aud;
 --       Executa as probas necesarias para comprobar que funciona.
 -- 
 DROP TRIGGER IF EXISTS centro_BU;
-DELIMITER //
-CREATE TRIGGER centro_BU BEFORE UPDATE ON centro
+DELIMITER // -- Se pueden meter los triggers dentro del mismo delimitador
+CREATE TRIGGER centroAU AFTER UPDATE ON centro
 	FOR EACH ROW
 		BEGIN
 			INSERT INTO centro_aud (cenNumero, cenNome, cenEnderezo, aud_dat, aud_usr, aud_ope)
@@ -60,7 +166,7 @@ DELIMITER ;
 
 DROP TRIGGER IF EXISTS centro_BD;
 DELIMITER //
-CREATE TRIGGER centro_BD BEFORE DELETE ON centro
+CREATE TRIGGER centroAD AFTER DELETE ON centro
 	FOR EACH ROW
 		BEGIN
 			INSERT INTO centro_aud (cenNumero, cenNome,cenEnderezo,aud_usr,aud_ope)
@@ -110,6 +216,8 @@ SET depDirector = 160
 WHERE depNumero = 110;
             
 
+SHOW TRIGGERS;
+SHOW CREATE TRIGGER departamento_BU;
 -- 
 -- 
 -- EVENTOS:
@@ -139,3 +247,4 @@ WHERE depNumero = 110;
 --        
 --     6. Modifica o evento creado na actividade anterior para activalo e cambia a súa data de execución para o 12 de xuño ás 20h.
 --        
+
