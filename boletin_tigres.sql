@@ -391,7 +391,6 @@ ON SCHEDULE AT "2024-06-12 20:00:00" -- Falta la fucnion de fecha str_todate(202
 show events;
 show create event nombre_evetno;
 
--- Cuando pregunte en el examen por los eventos que haya  hay que ponerle las dos sentencias de arriba
 
 
 
